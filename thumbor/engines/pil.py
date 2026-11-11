@@ -348,6 +348,11 @@ class Engine(BaseEngine):
                 self.context.config.PNG_COMPRESSION_LEVEL
             )
 
+        if ext == ".gif" and self.image.mode == "P":
+            transparent_index = self.get_transparent_palette_index()
+            if transparent_index is not None:
+                options["transparency"] = transparent_index
+
         if options["quality"] is None:
             options["quality"] = self.context.config.QUALITY
 
@@ -453,6 +458,20 @@ class Engine(BaseEngine):
                 results = newresults
 
         return results
+
+    def get_transparent_palette_index(self):
+        # Returns the index of the first fully transparent palette entry,
+        # or None. Quantizing an RGBA image keeps the alpha in the palette
+        # but does not set info["transparency"], so the GIF writer needs it.
+        palette = self.image.getpalette(rawmode="RGBA")
+        if not palette:
+            return None
+
+        for index in range(len(palette) // 4):
+            if palette[index * 4 + 3] == 0:
+                return index
+
+        return None
 
     def read_multiple(self, images, extension=None):
         self.image.format = FORMATS.get(
