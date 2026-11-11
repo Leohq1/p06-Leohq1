@@ -298,6 +298,9 @@ class Transformer:
             )
             crop_height = source_height
 
+        crop_width = max(1, crop_width)
+        crop_height = max(1, crop_height)
+
         crop_left = int(
             round(
                 min(
@@ -379,6 +382,16 @@ class Transformer:
         if self.context.request.full:
             sign = -1
 
+        # a zero side (e.g. fit-in/100x0) takes its value from the source ratio
+        if not self.target_height and self.target_width:
+            self.target_height = (
+                source_height * self.target_width / source_width
+            )
+        if not self.target_width and self.target_height:
+            self.target_width = (
+                source_width * self.target_height / source_height
+            )
+
         if (
             sign == 1
             and self.target_width >= source_width
@@ -391,14 +404,20 @@ class Transformer:
             source_width / self.target_width * sign
             >= source_height / self.target_height * sign
         ):
-            resize_height = round(
-                source_height * self.target_width / source_width + 1e-5
+            resize_height = max(
+                1,
+                round(
+                    source_height * self.target_width / source_width + 1e-5
+                ),
             )
             resize_width = self.target_width
         else:
             resize_height = self.target_height
-            resize_width = round(
-                source_width * self.target_height / source_height + 1e-5
+            resize_width = max(
+                1,
+                round(
+                    source_width * self.target_height / source_height + 1e-5
+                ),
             )
 
         # ensure that filter should work on the real image size
